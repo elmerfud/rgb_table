@@ -3,14 +3,27 @@
 #include <math.h>
 #include <ftdi.h>
 
-#define BAUD 500000
+#define BAUD 115200
 struct ftdi_context ftdic;
 
 #define WIDTH   16
 #define HEIGHT  8
 
 unsigned char table[WIDTH][HEIGHT][3];
-unsigned char flat_table[WIDTH*HEIGHT*3];
+unsigned char flat_table[WIDTH*HEIGHT*3+6];
+
+inline int f(int n, int x)
+{
+    return x*((x/n+1)%2)+(x+(n-2*(x-n*(x/n))-1))*((x/n)%2);
+}
+
+inline void set_led(int x, int y, uint8_t r, uint8_t g, uint8_t b)
+{
+    flat_table[f(WIDTH, y)*3+6] = r | 0x80;
+    flat_table[f(WIDTH, y)*3+7] = g | 0x80;
+    flat_table[f(WIDTH, y)*3+8] = b | 0x80;
+}
+                                
 
 void send(void);
 
@@ -49,7 +62,8 @@ int init_serial(void)
 
 int send_serial(unsigned char data)
 {
-    ftdi_write_data(&ftdic, flat_table, WIDTH*HEIGHT*3);
+    ftdi_write_data(&ftdic, flat_table, WIDTH*HEIGHT*3+6);
+    usleep(40000);
     return 1;
 }
 
@@ -58,8 +72,15 @@ void send(void)
     int x,y;
 
     // send out start byte
-    unsigned char start_byte = 0xff;    
-    ftdi_write_data(&ftdic, &start_byte, 1);
+    //unsigned char start_byte = 0xff;    
+    //ftdi_write_data(&ftdic, &start_byte, 1);
+
+    flat_table[0] = 'A';
+    flat_table[1] = 'd';
+    flat_table[2] = 'a';
+    flat_table[3] = (uint8_t)(WIDTH*HEIGHT-1) >> 8;
+    flat_table[4] = (uint8_t)(WIDTH*HEIGHT-1) & 0xff;
+    flat_table[5] = flat_table[3] ^ flat_table[4] ^ 0x55;
 
     int count = 0;
     // send out table data
@@ -67,6 +88,9 @@ void send(void)
     {
         for (x=0; x<WIDTH; x++)
         {
+            set_led(x, count, table[x][y][0], table[x][y][1], table[x][y][2]);
+            count++;
+            /*
             if (y>=HEIGHT/2)
             {
                 flat_table[count] = table[x][y][0]; count++;
@@ -79,6 +103,7 @@ void send(void)
                 flat_table[count] = table[WIDTH-x-1][y][1]; count++;
                 flat_table[count] = table[WIDTH-x-1][y][2]; count++;
             }
+            */
         }
     }
 

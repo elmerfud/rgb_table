@@ -1,0 +1,1 @@
+Fork of https://github.com/bear24rw/rgb_table to work with the Arduino using the code from https://github.com/adafruit/Adalight to drive a LPD8806 strip.
