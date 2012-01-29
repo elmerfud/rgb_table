@@ -3,7 +3,7 @@ CFLAGS = -Wall -O2 -lGL -lGLU -lm -lSDL_image -lfftw3 -lftdi `sdl-config --cflag
 OBJECTS = main.o fft.o draw.o table.o serial.o
 
 main : $(OBJECTS)
-		$(CC) $(CFLAGS) $(OBJECTS) -o main
+		$(CC) $(OBJECTS) $(CFLAGS) -o main
 
 %.o : %.c
 		$(CC) $(CFLAGS) -c $<
