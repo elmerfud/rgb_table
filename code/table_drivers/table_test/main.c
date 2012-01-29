@@ -9,8 +9,8 @@ struct ftdi_context ftdic;
 #define WIDTH   16
 #define HEIGHT  8
 
-unsigned char table[WIDTH][HEIGHT][3];
-unsigned char flat_table[WIDTH*HEIGHT*3+6];
+static uint8_t table[WIDTH][HEIGHT][3];
+static uint8_t flat_table[WIDTH*HEIGHT*3+6];
 
 inline int f(int n, int x)
 {
@@ -19,9 +19,9 @@ inline int f(int n, int x)
 
 inline void set_led(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 {
-    flat_table[f(WIDTH, y)*3+6] = r | 0x80;
-    flat_table[f(WIDTH, y)*3+7] = g | 0x80;
-    flat_table[f(WIDTH, y)*3+8] = b | 0x80;
+    flat_table[f(WIDTH, y)*3+6] = r;
+    flat_table[f(WIDTH, y)*3+7] = g;
+    flat_table[f(WIDTH, y)*3+8] = b;
 }
                                 
 
@@ -72,9 +72,6 @@ void send(void)
     int x,y;
 
     // send out start byte
-    //unsigned char start_byte = 0xff;    
-    //ftdi_write_data(&ftdic, &start_byte, 1);
-
     flat_table[0] = 'A';
     flat_table[1] = 'd';
     flat_table[2] = 'a';
@@ -90,20 +87,6 @@ void send(void)
         {
             set_led(x, count, table[x][y][0], table[x][y][1], table[x][y][2]);
             count++;
-            /*
-            if (y>=HEIGHT/2)
-            {
-                flat_table[count] = table[x][y][0]; count++;
-                flat_table[count] = table[x][y][1]; count++;
-                flat_table[count] = table[x][y][2]; count++;
-            }
-            else
-            {
-                flat_table[count] = table[WIDTH-x-1][y][0]; count++;
-                flat_table[count] = table[WIDTH-x-1][y][1]; count++;
-                flat_table[count] = table[WIDTH-x-1][y][2]; count++;
-            }
-            */
         }
     }
 
@@ -111,7 +94,7 @@ void send(void)
 
 }
 
-void set_all(unsigned char r, unsigned char g, unsigned char b)
+void set_all(uint8_t r, uint8_t g, uint8_t b)
 {
     int x,y;
     for (x=0; x<WIDTH; x++)
@@ -244,9 +227,9 @@ void row_gradient_green(void)
     for (y=0; y<HEIGHT; y++)
     {
         //set_row(y,0, 0,(int)(255.0*(float)y/(float)HEIGHT));
-          //set_row(y, 0,(int)(255.0*(float)y/(float)HEIGHT),0);
+        set_row(y, 0,(int)(255.0*(float)y/(float)HEIGHT),0);
         //set_row(y, (int)(255.0*(float)y/(float)HEIGHT),0,0);
-        set_row(y, (int)(255.0*(float)y/(float)HEIGHT),(int)(255.0*(float)y/(float)HEIGHT),0);
+        //set_row(y, (int)(255.0*(float)y/(float)HEIGHT),(int)(255.0*(float)y/(float)HEIGHT),0);
     }
 
     send();
@@ -295,7 +278,7 @@ int main(void)
 
         set_all(15,15,15);
         sleep(1);
-        continue;
+        //continue;
 
         row_gradient_green();
         sleep(1);
