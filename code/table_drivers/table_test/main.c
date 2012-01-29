@@ -63,7 +63,7 @@ int init_serial(void)
 int send_serial(unsigned char data)
 {
     ftdi_write_data(&ftdic, flat_table, WIDTH*HEIGHT*3+6);
-    usleep(40000);
+    //usleep(40000);
     return 1;
 }
 
