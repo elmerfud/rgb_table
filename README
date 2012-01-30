@@ -1,1 +1,13 @@
-Fork of https://github.com/bear24rw/rgb_table to work with the Arduino using the code from https://github.com/adafruit/Adalight to drive a LPD8806 strip.
+Inspired by this project
+http://e2e.ti.com/group/msp430launchpad/m/project/447779.aspx
+
+I decided to see if I could make it work with the Arduino and an LPD8806 LED strip.  
+
+This is a fork of the code at https://github.com/bear24rw/rgb_table 
+
+Currently this requires and Arduino with the FTDI usb chip as it uses the ftdi functions.  Removed the unneeded bits of code.  Changed how it outputs data over the serial line so it converts the x,y plots to the correct position on the string of LEDs.  
+
+The Arduino using the code from https://github.com/adafruit/Adalight to drive a LPD8806 strip.
+
+Since it's just different Arduino side code this should also work with the WS2801 strips such as http://www.sparkfun.com/products/10312 or a chain such as http://www.adafruit.com/products/322 as well, but I don't have one to test with.
+  
