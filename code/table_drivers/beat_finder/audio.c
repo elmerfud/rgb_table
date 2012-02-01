@@ -122,7 +122,7 @@ int init_alsa(void)
     }
 
     // signed 16-bit little-endian format
-    rc = snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_U16_BE);
+    //rc = snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_U16_BE);
     if (rc < 0)
     {
         printf("Unable to set format\n");

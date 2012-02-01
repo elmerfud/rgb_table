@@ -1,6 +1,8 @@
 #ifndef DRAW_H
 #define DRAW_H
 
+#define FONT_FILE "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraMono.ttf" 
+
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL.h>

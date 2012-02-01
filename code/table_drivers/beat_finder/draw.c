@@ -49,7 +49,7 @@ void init_gl(void)
 
     glDisable(GL_DEPTH_TEST);
 
-    font = ftglCreatePixmapFont("/usr/share/fonts/ttf-bitstream-vera/VeraMono.ttf");
+    font = ftglCreatePixmapFont(FONT_FILE);
     if (!font)
     {
         printf("Could not load font!\n");
