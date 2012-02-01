@@ -1,12 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
+#include <pthread.h>
 
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL.h>
+#include <FTGL/ftgl.h>
 
 #include "main.h"
+#include "audio.h"
 #include "fft.h"
 #include "draw.h"
 #include "table.h"
@@ -30,6 +34,9 @@ int mouse_y = 0;
 SDL_Event event;
 SDL_Surface *surface;    
 
+FTGLfont *font;
+char text[100];
+
 unsigned char done = FALSE;
 
 void init_gl(void)
@@ -42,7 +49,11 @@ void init_gl(void)
 
     glDisable(GL_DEPTH_TEST);
 
-    glEnable(GL_BLEND);                            
+    font = ftglCreatePixmapFont("/usr/share/fonts/ttf-bitstream-vera/VeraMono.ttf");
+    if (!font)
+    {
+        printf("Could not load font!\n");
+    }
 }
 
 int init_sdl(void)
@@ -205,8 +216,6 @@ void draw_mag_hist_var(int i, float off_x, float off_y)
 // draw magnitude history
 void draw_mag_hist(int i, float off_x, float off_y)
 {
-    glBegin(GL_QUADS);
-
     for (k = 0; k < HIST_SIZE; k++)
     {
         float r = 255*fft_bin[i].hist[k]/fft_global_hist_mag_max;
@@ -216,15 +225,11 @@ void draw_mag_hist(int i, float off_x, float off_y)
         // if this was a beat, color it white
         if (fft_bin[i].trigger_hist[k]) {r = 255; g = 255; b = 255;}
 
-        glColor3ub(r, g, b );
+        glColor3ub(r, g, b * 0.8);
 
-        glVertex2f(off_x + (i+1)*FFT_BIN_WIDTH , off_y + k*FFT_BIN_WIDTH );        // TL
-        glVertex2f(off_x + (i+1)*FFT_BIN_WIDTH , off_y + (k+1)*FFT_BIN_WIDTH );    // TR
-        glVertex2f(off_x + i*FFT_BIN_WIDTH     , off_y + (k+1)*FFT_BIN_WIDTH );    // BR
-        glVertex2f(off_x + i*FFT_BIN_WIDTH     , off_y + k*FFT_BIN_WIDTH );        // BL 
+        glRectf(off_x + (i+0)*FFT_BIN_WIDTH, off_y + (k+0)*FFT_BIN_WIDTH,
+                off_x + (i+1)*FFT_BIN_WIDTH, off_y + (k+1)*FFT_BIN_WIDTH);
     }
-
-    glEnd();
 
     // draw bar at bottom of history
     glBegin(GL_LINES);
@@ -285,13 +290,9 @@ void draw_lights(void)
         // draw light if its on
         if (lights[i].state)
         {
-            glBegin(GL_QUADS);
             glColor3ub(25, 0, 255);
-            glVertex2f(x + s + i*LIGHT_SIZE + 5        , y + 5);               // BL
-            glVertex2f(x + s + i*LIGHT_SIZE + 5        , y + LIGHT_SIZE - 5);  // TL
-            glVertex2f(x + s + (i+1)*LIGHT_SIZE - 5    , y + LIGHT_SIZE - 5);  // TR
-            glVertex2f(x + s + (i+1)*LIGHT_SIZE - 5    , y + 5);              // BR
-            glEnd();
+            glRectf(x + s + (i+0)*LIGHT_SIZE + 5, y + LIGHT_SIZE - 5,
+                    x + s + (i+1)*LIGHT_SIZE - 5, y + 5);
         }
     }
 }
@@ -302,6 +303,23 @@ int draw_all(void)
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+
+    // draw debug text
+    
+    glPushMatrix();
+
+    glTranslated(100, 100, 100);
+
+    ftglSetFontFaceSize(font, 18, 0);
+
+    pthread_mutex_lock(&sample_mutex);
+    sprintf(text, "Missed samples: %d", missed_samples);
+    ftglRenderFont(font, text, FTGL_RENDER_ALL);
+    pthread_mutex_unlock(&sample_mutex);
+
+    glPopMatrix();
+
+    // offset the drawing
 
     glTranslatef(xpos, ypos, zpos);
 
@@ -315,21 +333,34 @@ int draw_all(void)
         draw_mag_hist(i, 0, 0);
     }
 
-    /*
+    for (i=0; i < HIST_SIZE; i++)
+    {
+        double val = 0;
+
+        for (j=0; j < FFT_NUM_BINS; j++)
+        {
+            val += fft_bin[j].hist[i];
+            //val += fft_bin[j].hist_std;
+        }
+
+        glRectf(0, 0+ i*FFT_BIN_WIDTH,
+                0-(val/100), 0+ (i+1)*FFT_BIN_WIDTH);
+    }
+    
     // draw average var line
     glBegin(GL_LINES);
     glColor3ub(255, 255, 0);
-    glVertex2f(0                , HIST_SIZE*FFT_BIN_WIDTH + fft_global_hist_std_avg);
-    glVertex2f(FFT_NUM_BINS*FFT_BIN_WIDTH    , HIST_SIZE*FFT_BIN_WIDTH + fft_global_hist_std_avg);
+    glVertex2f(0                             , HIST_SIZE*FFT_BIN_WIDTH + fft_global_mag_avg);
+    glVertex2f(FFT_NUM_BINS*FFT_BIN_WIDTH    , HIST_SIZE*FFT_BIN_WIDTH + fft_global_mag_avg);
     glEnd();
 
     // draw history average average line
     glBegin(GL_LINES);
     glColor3ub(0, 255, 0);
-    glVertex2f(0                 , HIST_SIZE*FFT_BIN_WIDTH + fft_global_hist_avg);
-    glVertex2f(FFT_NUM_BINS*FFT_BIN_WIDTH    , HIST_SIZE*FFT_BIN_WIDTH + fft_global_hist_avg);
+    glVertex2f(0                            , HIST_SIZE*FFT_BIN_WIDTH + fft_global_hist_mag_avg);
+    glVertex2f(FFT_NUM_BINS*FFT_BIN_WIDTH   , HIST_SIZE*FFT_BIN_WIDTH + fft_global_hist_mag_avg);
     glEnd();
-    */
+   
 
     // draw mag clip
     if (USE_CLIP)
@@ -353,34 +384,35 @@ int draw_all(void)
     // draw lines from the light to corresponding bin
     draw_lines_to_lights();
 
-    draw_table(0,0);
+    //draw_table(0,0);
 
     // draw the real vs img plot
     //draw_real_img_plot(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
 
     // draw raw signal
+
     glBegin(GL_LINE_STRIP);
     glColor3ub(100,100,100);
     for (i=0; i < SAMPLE_SIZE; i++)
-        glVertex2f(i*SCREEN_WIDTH/SAMPLE_SIZE, 25 + fft_input[i] / 1000);
+    {
+        glVertex2f(i*SCREEN_WIDTH/SAMPLE_SIZE, (SCREEN_HEIGHT / 2) + (fft_input[i] - fft_input_avg) / 100 );
+    }
     glEnd();
 
 
     // draw test gradient
-    /*
-       for (i=0; i<360; i++)
-       {
-       int r,g,b;
-       HSVtoRGB(&r,&g,&b,i,255,255);
-       glBegin(GL_LINE_STRIP);
-       glColor3ub(r,g,b);
-       glVertex2f(i,200);
-       glVertex2f(i,300);
-       glEnd();
-       }
-       */
-
-
+    /* 
+    for (i=0; i<360; i++)
+    {
+        int r,g,b;
+        hsv_to_rgb(i,1,1,&r,&g,&b);
+        glBegin(GL_LINE_STRIP);
+        glColor3ub(r,g,b);
+        glVertex2f(i,200);
+        glVertex2f(i,300);
+        glEnd();
+    }
+    */
 
     // flip it to the screen
     SDL_GL_SwapBuffers();

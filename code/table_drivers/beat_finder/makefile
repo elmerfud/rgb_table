@@ -1,9 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -O2 -lGL -lGLU -lm -lSDL_image -lfftw3 -lftdi `sdl-config --cflags --libs`
-OBJECTS = main.o fft.o draw.o table.o serial.o
+CFLAGS = -Wall -Werror -O2 -std=c99 -lGL -lGLU -lm -lSDL_image -lfftw3 -lftdi -lasound -lpthread `pkg-config ftgl freetype2 --cflags --libs` `sdl-config --cflags --libs` -I/usr/include/freetype2/
+OBJECTS = main.o fft.o draw.o table.o serial.o audio.o
 
-main : $(OBJECTS)
-		$(CC) $(OBJECTS) $(CFLAGS) -o main
+all: compile
+
+debug: CFLAGS += -g -pg
+debug: compile
+
+compile : $(OBJECTS)
+		$(CC) $(CFLAGS) $(OBJECTS) -o main
 
 %.o : %.c
 		$(CC) $(CFLAGS) -c $<

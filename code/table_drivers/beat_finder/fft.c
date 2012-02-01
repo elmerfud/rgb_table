@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <fftw3.h>
 
@@ -10,63 +11,37 @@ double *fft_input;
 fftw_complex *fft_out;
 fftw_plan fft_plan;
 
-FILE *fifo_file;
+double fft_input_avg = 0;
 
-int init_fft(void)
+void init_fft(void)
 {
     fft_input = fftw_malloc(sizeof(double) * SAMPLE_SIZE);
     fft_out = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * FFT_SIZE);
     fft_plan = fftw_plan_dft_r2c_1d(SAMPLE_SIZE, fft_input, fft_out, FFTW_ESTIMATE);
-
-    fifo_file = fopen(FIFO_FILE, "rb");
-    if (!fifo_file)
-    {
-        printf("Cannot open file!\n");
-        return 1;
-    }
-
-    return 0;
 }
 
-void get_samples_do_fft(void)
+void do_fft(void)
 {
-    // read in PCM 44100:16:1
-    static int16_t buf[SAMPLE_SIZE];
+    // execute the dft
+    fftw_execute(fft_plan);
 
-    for (i = 0; i < SAMPLE_SIZE; i++) buf[i] = 0;
+    copy_bins_to_old();
 
-    int data = fread(buf, sizeof(int16_t), SAMPLE_SIZE, fifo_file);
+    compute_magnitude();
 
-    if (data != SAMPLE_SIZE)
-    {
-        printf("WRONG SAMPLE SIZE: %d!\n", data);
-    }
-    else
-    {
-        // cast the int16 array into a double array
-        for (i = 0; i < SAMPLE_SIZE; i++) fft_input[i] = (double)buf[i];
+    compute_delta_from_last();
 
-        // execute the dft
-        fftw_execute(fft_plan);
+    add_bins_to_history();
 
-        copy_bins_to_old();
+    compute_bin_hist();    
 
-        compute_magnitude();
-
-        compute_delta_from_last();
-
-        add_bins_to_history();
-
-        compute_bin_hist();    
-
-        compute_std_dev();
-    }
+    compute_std_dev();
 }
 
 // TODO: memcpy
 void copy_bins_to_old(void)
 {
-    for (i = 0; i < FFT_NUM_BINS; i++)
+    for (i = 1; i < FFT_NUM_BINS; i++)
     {
         fft_bin[i].last_mag = fft_bin[i].mag;
     }
@@ -82,7 +57,7 @@ void compute_magnitude(void)
 
     static double clip_mag_raw = 0;
 
-    for (i = 0; i < FFT_NUM_BINS; i++)
+    for (i = 1; i < FFT_NUM_BINS; i++)
     {
         // compute magnitude magnitude
         fft_bin[i].mag = sqrt( fft_out[i][0]*fft_out[i][0] + fft_out[i][1]*fft_out[i][1] );
@@ -105,7 +80,7 @@ void compute_magnitude(void)
         clip_mag = CLIP_STATIC_MAG;
 
     // loop through all bins and see if they need to be clipped
-    for (i = 0; i < FFT_NUM_BINS; i++)
+    for (i = 1; i < FFT_NUM_BINS; i++)
     {
         if (USE_CLIP && fft_bin[i].mag > clip_mag)
         {
@@ -118,7 +93,8 @@ void compute_magnitude(void)
     // we want to start lowering the clip magnitude
     if (! clipped) 
     {
-        clip_mag_raw -= pow(clip_mag_decay/100, 3);    // decrease the clip by x^3 since it has slow 'acceleration'
+       // clip_mag_raw -= pow(clip_mag_decay/100, 3);    // decrease the clip by x^3 since it has slow 'acceleration'
+        clip_mag_raw -= pow(clip_mag_decay/50, 3);    // decrease the clip by x^3 since it has slow 'acceleration'
         clip_mag_decay++;                            // increment the index 
     }
     else
@@ -126,7 +102,7 @@ void compute_magnitude(void)
 
     // calculate the average magnitude
     fft_global_mag_avg = 0;
-    for (i = 0; i < FFT_NUM_BINS; i++)
+    for (i = 1; i < FFT_NUM_BINS; i++)
     {
         fft_global_mag_avg += fft_bin[i].mag;
     }
@@ -146,7 +122,7 @@ void compute_magnitude(void)
 //     would only work if noting use delta for everything
 void compute_delta_from_last(void)
 {
-    for (i = 0; i < FFT_NUM_BINS; i++)
+    for (i = 1; i < FFT_NUM_BINS; i++)
     {
         // calculate difference between these bins and the last
         // only takes the ones that increased from last time
@@ -160,7 +136,7 @@ void compute_delta_from_last(void)
 // push the current bins into history
 void add_bins_to_history (void)
 {
-    for (i = 0; i < FFT_NUM_BINS; i++)
+    for (i = 1; i < FFT_NUM_BINS; i++)
     {
         // shift history buffer down
         for (k = 1; k<HIST_SIZE; k++)
@@ -181,7 +157,7 @@ void compute_bin_hist(void)
     fft_global_hist_mag_max = 0;
     fft_global_hist_mag_avg = 0;
 
-    for (i = 0; i < FFT_NUM_BINS; i++)
+    for (i = 1; i < FFT_NUM_BINS; i++)
     {
         // reset bin hist avg
         fft_bin[i].hist_avg = 0;
@@ -214,7 +190,7 @@ void compute_std_dev(void)
     fft_global_hist_std_max = 0;
     fft_global_hist_std_avg = 0;
 
-    for (i = 0; i < FFT_NUM_BINS; i++)
+    for (i = 1; i < FFT_NUM_BINS; i++)
     {
         // compute the std deviation
         // sqrt(1/n * sum(x - a)^2)
