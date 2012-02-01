@@ -8,7 +8,7 @@ debug: CFLAGS += -g -pg
 debug: compile
 
 compile : $(OBJECTS)
-		$(CC) $(CFLAGS) $(OBJECTS) -o main
+		$(CC) $(OBJECTS) $(CFLAGS) -o main
 
 %.o : %.c
 		$(CC) $(CFLAGS) -c $<
