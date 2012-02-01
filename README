@@ -4,6 +4,11 @@ http://e2e.ti.com/group/msp430launchpad/m/project/447779.aspx
 I decided to see if I could make it work with the Arduino and an LPD8806 LED strip.  
 
 This is a fork of the code at https://github.com/bear24rw/rgb_table 
+this branch also integrate the alsa capture functionality from
+https://github.com/bear24rw/beat_finder
+
+
+
 
 Currently this requires and Arduino with the FTDI usb chip as it uses the ftdi functions.  Removed the unneeded bits of code.  Changed how it outputs data over the serial line so it converts the x,y plots to the correct position on the string of LEDs.  
 
