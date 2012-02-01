@@ -296,7 +296,7 @@ int main( int argc, char **argv )
 
             assign_lights();
 
-            //assign_cells();
+            assign_cells();
 
             if ( use_gui )
             {
@@ -304,7 +304,7 @@ int main( int argc, char **argv )
                 draw_all();
             }
 
-            if ( use_serial ) send_serial_fpga();
+            if ( use_serial ) send_serial_table();
         }
 
         usleep(5000);

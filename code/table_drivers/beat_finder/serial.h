@@ -1,7 +1,7 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
-#define BAUD     2400
+#define BAUD     500000
 
 int init_serial(void);
 void send_serial_fpga(void);

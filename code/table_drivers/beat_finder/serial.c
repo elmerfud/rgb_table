@@ -9,7 +9,19 @@
 
 struct ftdi_context ftdic;
 
-unsigned char flat_table[TABLE_HEIGHT*TABLE_WIDTH*3];
+unsigned char flat_table[TABLE_HEIGHT*TABLE_WIDTH*3+6];
+
+inline int f(int n, int x)
+{
+    return x*((x/n+1)%2)+(x+(n-2*(x-n*(x/n))-1))*((x/n)%2);
+}
+
+inline void set_led(int x, int y, uint8_t r, uint8_t g, uint8_t b)
+{
+    flat_table[f(TABLE_WIDTH, y)*3+6] = r;
+    flat_table[f(TABLE_WIDTH, y)*3+7] = g;
+    flat_table[f(TABLE_WIDTH, y)*3+8] = b;
+}
 
 int init_serial( void )
 {
@@ -60,8 +72,13 @@ void send_serial_table( void )
 {
     static int x, y = 0;
 
-    static unsigned char start_byte = 255;
-    ftdi_write_data(&ftdic, &start_byte, 1);
+    // send out start data
+    flat_table[0] = 'A';
+    flat_table[1] = 'd';
+    flat_table[2] = 'a';
+    flat_table[3] = (uint8_t)(TABLE_WIDTH*TABLE_HEIGHT-1) >> 8;
+    flat_table[4] = (uint8_t)(TABLE_WIDTH*TABLE_HEIGHT-1) & 0xff;
+    flat_table[5] = flat_table[3] ^ flat_table[4] ^ 0x55;
 
     // index into the flat_table array
     int index = 0;
@@ -71,26 +88,12 @@ void send_serial_table( void )
     {
         for (x=0; x<TABLE_WIDTH; x++)
         {
-            // make sure we don't try to send a start byte 
-            if (table[x][y].r > 254 || table[x][y].g > 254 || table[x][y].b > 254) 
-                printf("[ERROR] Found start byte in data array!\n");
-
-            // half the rows are wired backwards
-            if (y>=TABLE_HEIGHT/2)
-            {
-                flat_table[index] = table[x][y].r; index++;
-                flat_table[index] = table[x][y].g; index++;
-                flat_table[index] = table[x][y].b; index++;
-            }
-            else
-            {
-                flat_table[index] = table[TABLE_WIDTH-x-1][y].r; index++;
-                flat_table[index] = table[TABLE_WIDTH-x-1][y].g; index++;
-                flat_table[index] = table[TABLE_WIDTH-x-1][y].b; index++;
-            }
+            set_led(x, index, table[x][y].r, table[x][y].g, table[x][y].b);
+            index++;
         }
     }
 
     // send the flat array
-    ftdi_write_data(&ftdic, flat_table, TABLE_WIDTH*TABLE_HEIGHT*3);
+    ftdi_write_data(&ftdic, flat_table, TABLE_WIDTH*TABLE_HEIGHT*3+6);
+
 }
