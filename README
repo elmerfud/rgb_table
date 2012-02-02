@@ -4,15 +4,57 @@ http://e2e.ti.com/group/msp430launchpad/m/project/447779.aspx
 I decided to see if I could make it work with the Arduino and an LPD8806 LED strip.  
 
 This is a fork of the code at https://github.com/bear24rw/rgb_table 
-this branch also integrate the alsa capture functionality from
-https://github.com/bear24rw/beat_finder
-
-
-
+with the alsa capture enhancements from https://github.com/bear24rw/beat_finder
 
 Currently this requires and Arduino with the FTDI usb chip as it uses the ftdi functions.  Removed the unneeded bits of code.  Changed how it outputs data over the serial line so it converts the x,y plots to the correct position on the string of LEDs.  
 
 The Arduino using the code from https://github.com/adafruit/Adalight to drive a LPD8806 strip.
 
 Since it's just different Arduino side code this should also work with the WS2801 strips such as http://www.sparkfun.com/products/10312 or a chain such as http://www.adafruit.com/products/322 as well, but I don't have one to test with.
+
+This now listens on the Loopback,1,0 ALSA capture device.  Below is a sample of an asound.conf file that will take playback audio sent to the default ALSA device and send 2 channels to the Loopback,0,0 and 6 channels to the hdmi:NVidia device.  Modify as needed for your setup.  
+
+pcm.!default {
+        type plug
+        slave {
+                pcm multi
+        }
+        ttable.0.0 1.0
+        ttable.1.1 1.0
+        ttable.0.2 1.0
+        ttable.1.3 1.0
+        ttable.2.4 1.0
+        ttable.3.5 1.0
+        ttable.4.6 1.0
+        ttable.5.7 1.0
+
+}
+
+pcm.multi {
+        type multi
+        slaves.a.pcm "hw:Loopback,0,0"
+        slaves.a.channels 2
+        slaves.b.pcm "hdmi:NVidia"
+        slaves.b.channels 6
+        bindings.0.slave a
+        bindings.0.channel 0
+        bindings.1.slave a
+        bindings.1.channel 1
+        bindings.2.slave b
+        bindings.2.channel 0
+        bindings.3.slave b
+        bindings.3.channel 1
+        bindings.4.slave b
+        bindings.4.channel 2
+        bindings.5.slave b
+        bindings.5.channel 3
+        bindings.6.slave b
+        bindings.6.channel 4
+        bindings.7.slave b
+        bindings.7.channel 5
+}
+
+
+
+
   

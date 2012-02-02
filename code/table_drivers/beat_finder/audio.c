@@ -87,7 +87,7 @@ int init_alsa(void)
     list_cards();
 
     // open PCM device for recording
-    rc = snd_pcm_open(&handle, "default", SND_PCM_STREAM_CAPTURE, 0);
+    rc = snd_pcm_open(&handle, "hw:Loopback,1,0", SND_PCM_STREAM_CAPTURE, 0);
 
     if (rc < 0)
     {
