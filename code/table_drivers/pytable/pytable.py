@@ -1,6 +1,7 @@
 import sys
 import numpy
 import serial
+from struct import *
 
 class Table():
 
@@ -12,8 +13,25 @@ class Table():
         # initialize the table
         self.data = numpy.zeros(width*height*3).reshape(width, height, 3) 
 
+        # init output array
+        self.output = range(width*height*3)
+
+        self.low = (self.WIDTH * self.HEIGHT) >> 8
+        self.high = (self.WIDTH * self.HEIGHT) & 0xff
+        self.chk = self.low ^ self.high ^ 0x55
+
         # initialize serial port
         self.s = serial.Serial(device, baud)
+
+    def xy_to_flat(self,n, x):
+        return x*((x/n+1)%2)+(x+(n-2*(x-n*(x/n))-1))*((x/n)%2);
+
+    def set_led(self, x, y, r, g, b):
+
+        loc = self.xy_to_flat(self.WIDTH, y)
+        self.output[loc*3] = pack('B',r)
+        self.output[loc*3+1] = pack('B',g)
+        self.output[loc*3+2] = pack('B',b)
 
     def get(self, x, y):
 
@@ -35,21 +53,18 @@ class Table():
 
     def send(self):
 
-        self.s.write(chr(0xFF))
+        # Start of sequence
+        self.s.write("Ada")
+        self.s.write(pack('BBB',self.low,self.high,self.chk))
 
+        i = 0
         for y in range(self.HEIGHT):
             for x in range(self.WIDTH):
-                
-                if (y >= self.HEIGHT / 2):
-                    self.s.write(chr(int(self.data[x][y][0])))
-                    self.s.write(chr(int(self.data[x][y][1])))
-                    self.s.write(chr(int(self.data[x][y][2])))
-                else:
-                    self.s.write(chr(int(self.data[self.WIDTH-x-1][y][0])))
-                    self.s.write(chr(int(self.data[self.WIDTH-x-1][y][1])))
-                    self.s.write(chr(int(self.data[self.WIDTH-x-1][y][2])))
+                self.set_led(x, i, self.data[x][y][0], self.data[x][y][1], self.data[x][y][2])
+                i = i + 1
 
-
+        for byte in self.output:
+            self.s.write(byte)
 
 
 table = Table()
