@@ -6,7 +6,7 @@ I decided to see if I could make it work with the Arduino and an LPD8806 LED str
 This is a fork of the code at https://github.com/bear24rw/rgb_table 
 with the alsa capture enhancements from https://github.com/bear24rw/beat_finder
 
-Currently this requires and Arduino with the FTDI usb chip as it uses the ftdi functions.  Removed the unneeded bits of code.  Changed how it outputs data over the serial line so it converts the x,y plots to the correct position on the string of LEDs.  
+The code no longer relies FTDI for sending data to the Arduino.  It now uses termios and will connect on standard serial port interfaces /dev/ttyUSB0 etc...  Removed the unneeded bits of code.  Changed how it outputs data over the serial line so it converts the x,y plots to the correct position on the string of LEDs.  
 
 The Arduino using the code from https://github.com/adafruit/Adalight to drive a LPD8806 strip.
 
