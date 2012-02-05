@@ -1,13 +1,17 @@
-#include <stdio.h>
+#include <fcntl.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <math.h>
-#include <ftdi.h>
+#include <termios.h>
+#include <unistd.h>
 
-#define BAUD 115200
-struct ftdi_context ftdic;
+#define BAUD 500000
 
 #define WIDTH   16
 #define HEIGHT  8
+
+static int serial_fd;
 
 static uint8_t table[WIDTH][HEIGHT][3];
 static uint8_t flat_table[WIDTH*HEIGHT*3+6];
@@ -27,44 +31,57 @@ inline void set_led(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 
 void send(void);
 
-int init_serial(void)
+static int serialport_init(const char* serialport, int baud)
 {
-    int vid = 0x0403;
-    int pid = 0x6001;
-    int interface = INTERFACE_ANY;
-    int f;
+    struct termios toptions;
+    int fd;
 
-    if (ftdi_init(&ftdic) < 0)
-    {
-        fprintf(stderr, "ftdi_init failed\n");
-        return 1;
+    fd = open(serialport, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    if (fd == -1)  {
+        perror("init_serialport: Unable to open port ");
+        return -1;
     }
 
-    ftdi_set_interface(&ftdic, interface);
-
-    f = ftdi_usb_open(&ftdic, vid, pid);
-    if (f < 0)
-    {
-        fprintf(stderr, "unable to open ftdi device: %d (%s)\n", f, ftdi_get_error_string(&ftdic));
-        return 1;
+    if (tcgetattr(fd, &toptions) < 0) {
+        perror("init_serialport: Couldn't get term attributes");
+        return -1;
+    }
+    speed_t brate = baud; // let you override switch below if needed
+    switch(baud) {
+        case 115200: 
+            brate=B115200; 
+            break;
+        case 230400: 
+            brate=B230400; 
+            break;
+        case 500000: 
+            brate=B500000; 
+            break;
     }
 
-    // Set baudrate
-    f = ftdi_set_baudrate(&ftdic, BAUD);
-    if (f < 0)
-    {
-        fprintf(stderr, "unable to set baudrate: %d (%s)\n", f, ftdi_get_error_string(&ftdic));
-        return 1; 
+    cfsetispeed(&toptions, brate);
+    cfsetospeed(&toptions, brate);
+
+    toptions.c_iflag       = INPCK;
+    toptions.c_lflag       = 0;
+    toptions.c_oflag       = 0;
+    toptions.c_cflag       = CREAD | CS8 | CLOCAL;
+    toptions.c_cc[ VMIN ]  = 0;
+    toptions.c_cc[ VTIME ] = 0;
+
+    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
+        perror("init_serialport: Couldn't set term attributes");
+        return -1;
     }
 
-    return 0;
+    return fd;
 }
 
-int send_serial(unsigned char data)
+int init_serial(void)
 {
-    ftdi_write_data(&ftdic, flat_table, WIDTH*HEIGHT*3+6);
-    //usleep(40000);
-    return 1;
+    serial_fd = serialport_init("/dev/ttyUSB0", BAUD);
+
+    return 0;
 }
 
 void send(void)
@@ -75,8 +92,8 @@ void send(void)
     flat_table[0] = 'A';
     flat_table[1] = 'd';
     flat_table[2] = 'a';
-    flat_table[3] = (uint8_t)(WIDTH*HEIGHT-1) >> 8;
-    flat_table[4] = (uint8_t)(WIDTH*HEIGHT-1) & 0xff;
+    flat_table[3] = (WIDTH*HEIGHT-1) >> 8;
+    flat_table[4] = (WIDTH*HEIGHT-1) & 0xff;
     flat_table[5] = flat_table[3] ^ flat_table[4] ^ 0x55;
 
     int count = 0;
@@ -90,8 +107,16 @@ void send(void)
         }
     }
 
-    send_serial(0);
+    int i, err, bytesToGo, bytesSent, totalBytesSent = 0;
+    tcdrain(serial_fd);
+    for (bytesSent=0, bytesToGo=sizeof(flat_table); bytesToGo > 0;) {
+        if ((i = write(serial_fd, &flat_table[bytesSent], bytesToGo)) > 0) {
+            bytesToGo -= i;
+            bytesSent += i;
+        }
+    }
 
+    usleep(25000);
 }
 
 void set_all(uint8_t r, uint8_t g, uint8_t b)
@@ -141,7 +166,7 @@ void walk(void)
 
             send();
 
-            sleep(.25);
+            //sleep(.25);
         }
     }
 }
@@ -273,17 +298,19 @@ int main(void)
 
     int SLEEP = 3;
 
+    //sleep(5);
+
     while (1)
     {
-
+        printf("set all\n");
         set_all(15,15,15);
         sleep(1);
         //continue;
-
+        printf("row green\n");
         row_gradient_green();
         sleep(1);
         //continue;
-
+        printf("set all\n");
         set_all(10,10,10);
         sleep(2);
 
