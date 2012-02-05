@@ -116,7 +116,7 @@ void send(void)
         }
     }
 
-    usleep(25000);
+    usleep(5000);
 }
 
 void set_all(uint8_t r, uint8_t g, uint8_t b)
