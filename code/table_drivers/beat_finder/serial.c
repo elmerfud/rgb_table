@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "main.h"
 #include "draw.h"
@@ -20,10 +21,10 @@ inline int f(int n, int x)
 }
 
 inline void set_led(int x, int y, uint8_t r, uint8_t g, uint8_t b)
-{
-    flat_table[f(TABLE_WIDTH, y)*3+6] = r;
-    flat_table[f(TABLE_WIDTH, y)*3+7] = g;
-    flat_table[f(TABLE_WIDTH, y)*3+8] = b;
+{   
+    flat_table[f(TABLE_WIDTH, y)*3+6] = (uint8_t)(r * (pow((float)r / 255.0, 2.8)));
+    flat_table[f(TABLE_WIDTH, y)*3+7] = (uint8_t)(g * (pow((float)g / 255.0, 2.8)));
+    flat_table[f(TABLE_WIDTH, y)*3+8] = (uint8_t)(b * (pow((float)b / 255.0, 2.8)));
 }
 
 static int serialport_init(const char* serialport, int baud)
@@ -74,7 +75,7 @@ static int serialport_init(const char* serialport, int baud)
 
 int init_serial( void )
 {
-    serial_fd = serialport_init("/dev/ttyUSB0", BAUD);
+    serial_fd = serialport_init("/dev/ttyACM0", BAUD);
         
     return 0;
 }

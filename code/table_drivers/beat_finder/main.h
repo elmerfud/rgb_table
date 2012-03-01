@@ -9,18 +9,18 @@
 #define SAMPLE_SIZE     1024
 #define SAMPLE_RATE     44100
 #define FFT_SIZE        (SAMPLE_SIZE / 2)
-#define MAX_FREQ        8000
-#define HIST_SIZE       12
+#define MAX_FREQ        400
+#define HIST_SIZE       16
 #define FREQ_PER_BIN    (SAMPLE_RATE / SAMPLE_SIZE)
-#define FFT_NUM_BINS    (MAX_FREQ/FREQ_PER_BIN)
+#define FFT_NUM_BINS    200 // (MAX_FREQ/FREQ_PER_BIN)
 #define FFT_BIN_WIDTH   10              // pixel width of bin
 
 // magnitude clip
 #define USE_CLIP        TRUE
 #define USE_CLIP_DYN    TRUE            // 1 = use dynamic clip, 0 = use static
-#define CLIP_STATIC_MAG 800             // static clip magnitude
+#define CLIP_STATIC_MAG 2000             // static clip magnitude
 
-#define MAG_SCALE       4000//10000
+#define MAG_SCALE       10000//10000
 
 #define NUM_LIGHTS      (2*4)           // how many lights to display
 #define LIGHT_DECAY     (HIST_SIZE*2)   // cycles until light is clear to trigger again

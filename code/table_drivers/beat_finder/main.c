@@ -18,7 +18,7 @@
 #include "table.h"
 #include "serial.h"
 
-unsigned char use_gui = TRUE;
+unsigned char use_gui = FALSE;
 unsigned char use_serial = TRUE;
 
 double clip_mag = 0;        // dynamic magnitude clip

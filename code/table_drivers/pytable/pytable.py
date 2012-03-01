@@ -5,7 +5,7 @@ from struct import *
 
 class Table():
 
-    def __init__(self, width=16, height=8, device='/dev/ttyUSB0', baud=500000):
+    def __init__(self, width=16, height=8, device='/dev/ttyACM0', baud=500000):
 
         self.WIDTH = width
         self.HEIGHT = height

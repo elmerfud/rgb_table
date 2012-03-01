@@ -79,7 +79,7 @@ static int serialport_init(const char* serialport, int baud)
 
 int init_serial(void)
 {
-    serial_fd = serialport_init("/dev/ttyUSB0", BAUD);
+    serial_fd = serialport_init("/dev/ttyACM0", BAUD);
 
     return 0;
 }

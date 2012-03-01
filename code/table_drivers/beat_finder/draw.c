@@ -384,10 +384,10 @@ int draw_all(void)
     // draw lines from the light to corresponding bin
     draw_lines_to_lights();
 
-    //draw_table(0,0);
+    draw_table(0,0);
 
     // draw the real vs img plot
-    //draw_real_img_plot(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+    draw_real_img_plot(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
 
     // draw raw signal
 
@@ -395,7 +395,7 @@ int draw_all(void)
     glColor3ub(100,100,100);
     for (i=0; i < SAMPLE_SIZE; i++)
     {
-        glVertex2f(i*SCREEN_WIDTH/SAMPLE_SIZE, (SCREEN_HEIGHT / 2) + (fft_input[i] - fft_input_avg) / 100 );
+        glVertex2f(i*SCREEN_WIDTH/SAMPLE_SIZE, (SCREEN_HEIGHT / 2) + (fft_input[i] - fft_input_avg) / 1000 );
     }
     glEnd();
 
